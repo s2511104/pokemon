@@ -1,35 +1,57 @@
 import streamlit as st
 import random
-from streamlit_sortables import sort_items
+import csv
+import os
 
 # ==========================================
-# 1. 데이터 및 설정 (상수 정의)
+# 1. 데이터 로드 및 변환 함수
 # ==========================================
 
-# 포켓몬 데이터베이스 (예시 데이터)
-POKEMON_DB = [
-    {"name": "이상해씨", "type": "풀", "hp": 45, "attack": 49, "defense": 49, "sp_atk": 65, "sp_def": 65, "speed": 45},
-    {"name": "파이리", "type": "불꽃", "hp": 39, "attack": 52, "defense": 43, "sp_atk": 60, "sp_def": 50, "speed": 65},
-    {"name": "꼬부기", "type": "물", "hp": 44, "attack": 48, "defense": 65, "sp_atk": 50, "sp_def": 64, "speed": 43},
-    {"name": "캐터피", "type": "벌레", "hp": 45, "attack": 30, "defense": 35, "sp_atk": 20, "sp_def": 20, "speed": 45},
-    {"name": "구구", "type": "비행", "hp": 40, "attack": 45, "defense": 40, "sp_atk": 35, "sp_def": 35, "speed": 56},
-    {"name": "꼬마돌", "type": "바위", "hp": 40, "attack": 80, "defense": 100, "sp_atk": 30, "sp_def": 30, "speed": 20},
-    {"name": "알통몬", "type": "격투", "hp": 70, "attack": 80, "defense": 50, "sp_atk": 35, "sp_def": 35, "speed": 35},
-    {"name": "케이시", "type": "에스퍼", "hp": 25, "attack": 20, "defense": 15, "sp_atk": 105, "sp_def": 55, "speed": 90},
-    {"name": "피카츄", "type": "전기", "hp": 35, "attack": 55, "defense": 40, "sp_atk": 50, "sp_def": 50, "speed": 90},
-    {"name": "코일", "type": "강철", "hp": 25, "attack": 35, "defense": 70, "sp_atk": 95, "sp_def": 55, "speed": 45},
-    {"name": "미뇽", "type": "드래곤", "hp": 41, "attack": 64, "defense": 45, "sp_atk": 50, "sp_def": 50, "speed": 50},
-    {"name": "고오스", "type": "고스트", "hp": 30, "attack": 35, "defense": 30, "sp_atk": 100, "sp_def": 35, "speed": 80},
-    {"name": "디그다", "type": "땅", "hp": 10, "attack": 55, "defense": 25, "sp_atk": 35, "sp_def": 45, "speed": 95},
-]
+# 영어 타입을 한글로 변환하기 위한 사전
+TYPE_TRANSLATION = {
+    "grass": "풀", "poison": "독", "fire": "불꽃", "flying": "비행",
+    "water": "물", "bug": "벌레", "normal": "노말", "electric": "전기",
+    "ground": "땅", "fairy": "페어리", "fighting": "격투", "psychic": "에스퍼",
+    "rock": "바위", "steel": "강철", "ice": "얼음", "ghost": "고스트",
+    "dragon": "드래곤", "dark": "악"
+}
 
-# 시설 정보 정의
+def load_pokemon_data(filename="pokemonnnn.csv"):
+    pokemon_db = []
+    
+    if not os.path.exists(filename):
+        st.error(f"'{filename}' 파일을 찾을 수 없습니다! 같은 폴더에 파일을 만들어주세요.")
+        return []
+
+    with open(filename, newline='', encoding='utf-8') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            # CSV 데이터를 게임 데이터 형식으로 변환
+            p_type_eng = row['type_1'].lower()
+            p_type_kor = TYPE_TRANSLATION.get(p_type_eng, "노말") # 없으면 노말
+            
+            pokemon_db.append({
+                "name": row['name'],          # 이름은 영어 그대로 사용 (Bulbasaur 등)
+                "type": p_type_kor,           # 타입은 한글로 변환
+                "hp": int(row['hp']),
+                "attack": int(row['attack']),
+                "defense": int(row['defense']),
+                "sp_atk": int(row['special_attack']),  # 컬럼명 매핑
+                "sp_def": int(row['special_defense']),
+                "speed": int(row['speed'])
+            })
+    return pokemon_db
+
+# 데이터 로드
+POKEMON_DB = load_pokemon_data()
+
+# 시설 정보 (기존 유지)
 FACILITIES_INFO = {
     "밭": {"cost": 0, "tech_req": 0, "banned": "독", "boost": "물", "stat": "hp", "output": "money"},
     "과수원": {"cost": 100, "tech_req": 10, "banned": "불꽃", "boost": "풀", "stat": "hp", "output": "money"},
     "닭장": {"cost": 300, "tech_req": 30, "banned": "벌레", "boost": "비행", "stat": "hp", "output": "money"},
     "채석장": {"cost": 500, "tech_req": 50, "banned": "물", "boost": "바위", "stat": "attack", "output": "money"},
-    "도서관": {"cost": 800, "tech_req": 80, "banned": "격투", "boost": "에스퍼", "stat": "sp_atk", "output": "tech"}, # 기술 생산
+    "도서관": {"cost": 800, "tech_req": 80, "banned": "격투", "boost": "에스퍼", "stat": "sp_atk", "output": "tech"},
     "광산": {"cost": 1200, "tech_req": 120, "banned": "드래곤", "boost": "땅", "stat": "attack", "output": "money"},
     "풍차": {"cost": 1500, "tech_req": 150, "banned": "전기", "boost": "격투", "stat": "defense", "output": "money"},
     "용광로": {"cost": 2000, "tech_req": 200, "banned": "강철", "boost": "불꽃", "stat": "sp_def", "output": "money"},
@@ -46,30 +68,28 @@ if 'initialized' not in st.session_state:
     st.session_state.turn = 1
     st.session_state.money = 0
     st.session_state.tech = 0
-    st.session_state.owned_pokemon = [POKEMON_DB[0]] # 초기: 이상해씨
-    st.session_state.owned_facilities = ["밭"] # 초기: 밭
-    # 배치 상태 저장 (Facility Name -> List of Pokemon Names)
-    st.session_state.assignments = {"대기중": ["이상해씨"], "밭": []}
     
-    # 드래그 앤 드롭 위젯 상태 유지를 위한 키
-    st.session_state.sortable_key = 0 
+    # DB가 비어있지 않다면 첫 번째 포켓몬 지급
+    initial_p = POKEMON_DB[0] if POKEMON_DB else None
+    
+    if initial_p:
+        st.session_state.owned_pokemon = [{"data": initial_p, "id": 0, "assigned_to": "대기중"}]
+    else:
+        st.session_state.owned_pokemon = []
+        
+    st.session_state.pokemon_id_counter = 1
+    st.session_state.owned_facilities = ["밭"]
 
 # ==========================================
 # 3. 로직 함수
 # ==========================================
 
-def get_pokemon_by_name(name):
-    for p in st.session_state.owned_pokemon:
-        if p['name'] == name:
-            return p
-    return None
-
-def calculate_efficiency(pokemon, facility_name):
+def calculate_efficiency(pokemon_data, facility_name):
     if facility_name == "대기중":
         return 0, ""
     
     fac_info = FACILITIES_INFO[facility_name]
-    p_type = pokemon['type']
+    p_type = pokemon_data['type']
     
     multiplier = 1.0
     status = "정상"
@@ -81,7 +101,7 @@ def calculate_efficiency(pokemon, facility_name):
         multiplier = 2.0
         status = "최적(2배)"
         
-    base_stat = pokemon[fac_info['stat']]
+    base_stat = pokemon_data[fac_info['stat']]
     production = int(base_stat * multiplier)
     
     return production, status
@@ -90,23 +110,14 @@ def process_turn():
     total_money_gain = 0
     total_tech_gain = 0
     
-    # 현재 배치 상태(assignments)를 순회하며 생산량 계산
-    # assignments는 드래그 앤 드롭 결과로 업데이트됨
-    for fac_name, assigned_list in st.session_state.assignments.items():
-        if fac_name == "대기중":
-            continue
-            
-        fac_info = FACILITIES_INFO.get(fac_name)
-        if not fac_info: continue
-        
-        for p_name in assigned_list:
-            pokemon = get_pokemon_by_name(p_name)
-            if pokemon:
-                prod, _ = calculate_efficiency(pokemon, fac_name)
-                if fac_info['output'] == 'money':
-                    total_money_gain += prod
-                else:
-                    total_tech_gain += prod
+    for p in st.session_state.owned_pokemon:
+        fac_name = p['assigned_to']
+        if fac_name != "대기중":
+            prod, _ = calculate_efficiency(p['data'], fac_name)
+            if FACILITIES_INFO[fac_name]['output'] == 'money':
+                total_money_gain += prod
+            else:
+                total_tech_gain += prod
 
     st.session_state.money += total_money_gain
     st.session_state.tech += total_tech_gain
@@ -115,26 +126,36 @@ def process_turn():
     return total_money_gain, total_tech_gain
 
 def gacha_pokemon():
-    # 현재 없는 포켓몬 중 랜덤 하나 뽑기
-    owned_names = [p['name'] for p in st.session_state.owned_pokemon]
-    available = [p for p in POKEMON_DB if p['name'] not in owned_names]
+    if not POKEMON_DB:
+        return None
+        
+    # 현재 없는 포켓몬 중 랜덤 뽑기 (이름 기준 중복 체크)
+    current_names = [p['data']['name'] for p in st.session_state.owned_pokemon]
+    available = [p for p in POKEMON_DB if p['name'] not in current_names]
     
     if available:
-        new_p = random.choice(available)
+        new_data = random.choice(available)
+        new_p = {
+            "data": new_data,
+            "id": st.session_state.pokemon_id_counter,
+            "assigned_to": "대기중"
+        }
         st.session_state.owned_pokemon.append(new_p)
-        # 새로 얻은 포켓몬은 '대기중' 리스트에 추가
-        st.session_state.assignments["대기중"].append(new_p['name'])
-        st.session_state.sortable_key += 1 # 위젯 갱신 트리거
-        return new_p
+        st.session_state.pokemon_id_counter += 1
+        return new_data
     return None
 
 # ==========================================
 # 4. UI 구성
 # ==========================================
 
-st.set_page_config(layout="wide", page_title="포켓몬 농장 타이쿤")
+st.set_page_config(layout="wide", page_title="CSV 포켓몬 농장")
 
-# --- 사이드바 (정보 및 가챠) ---
+if not POKEMON_DB:
+    st.warning("⚠️ 'pokemon.csv' 파일이 없습니다. 코드가 있는 폴더에 파일을 만들어주세요.")
+    st.stop()
+
+# --- 사이드바 ---
 with st.sidebar:
     st.title(f"Turn {st.session_state.turn}")
     st.metric("💰 자금", st.session_state.money)
@@ -142,120 +163,111 @@ with st.sidebar:
     
     st.divider()
     st.subheader("🌳 생명의 나무")
-    st.caption("나무 앞 냄비에 음식을 끓이면 포켓몬이 몰려듭니다.")
     
-    if st.button("🍲 요리하기 (일꾼 뽑기)"):
+    if st.button("🍲 요리하기 (일꾼 소환)", use_container_width=True):
         new_mon = gacha_pokemon()
         if new_mon:
-            st.success(f"야생의 {new_mon['name']}({new_mon['type']})가 나타났다!")
+            st.success(f"{new_mon['name']}({new_mon['type']}) 획득!")
         else:
-            st.warning("이 세계의 모든 포켓몬을 모았습니다!")
+            st.warning("데이터베이스의 모든 포켓몬을 모았습니다!")
 
     st.divider()
     st.subheader("🏗️ 시설 건설")
     
-    # 건설 가능한 시설 목록 표시
     for fac_name, info in FACILITIES_INFO.items():
         if fac_name in st.session_state.owned_facilities:
             continue
             
         if st.session_state.money >= info['cost'] and st.session_state.tech >= info['tech_req']:
-            if st.button(f"{fac_name} 건설 ({info['cost']}원)"):
+            if st.button(f"{fac_name} 건설 ({info['cost']}원)", use_container_width=True):
                 st.session_state.money -= info['cost']
                 st.session_state.owned_facilities.append(fac_name)
-                # 새 시설을 배치 목록에 추가
-                st.session_state.assignments[fac_name] = []
-                st.session_state.sortable_key += 1
                 st.rerun()
         else:
-            # 조건 불만족 시 비활성화된 텍스트만 표시
-            status_text = []
-            if st.session_state.money < info['cost']: status_text.append(f"돈 부족({info['cost']})")
-            if st.session_state.tech < info['tech_req']: status_text.append(f"기술 부족({info['tech_req']})")
-            st.text(f"🔒 {fac_name}: {', '.join(status_text)}")
+            status = []
+            if st.session_state.money < info['cost']: status.append("돈 부족")
+            if st.session_state.tech < info['tech_req']: status.append("기술 부족")
+            st.text(f"🔒 {fac_name}: {', '.join(status)}")
 
 # --- 메인 화면 ---
 
-st.title("포켓몬 생산 시설 관리")
-st.info("포켓몬을 드래그하여 시설에 배치하세요. 배치가 끝나면 사이드바에서 턴을 넘기세요.")
+st.title("📊 CSV 기반 포켓몬 농장")
+st.caption(f"총 {len(POKEMON_DB)}마리의 포켓몬 데이터가 로드되었습니다.")
 
-# 턴 넘기기 버튼을 상단에 배치
-if st.button("🌙 턴 종료 (생산 시작)", type="primary"):
+if st.button("🌙 턴 종료 (작업 시작)", type="primary", use_container_width=True):
     m_gain, t_gain = process_turn()
-    st.toast(f"이번 턴 수익: 💰+{m_gain}, 💡+{t_gain}")
+    st.toast(f"수익 발생! 💰+{m_gain}, 💡+{t_gain}")
     st.rerun()
 
 st.divider()
 
-# --- 드래그 앤 드롭 시스템 (핵심 구현) ---
+col1, col2 = st.columns([1, 1])
 
-# 1. sort_items를 위한 데이터 구조 생성
-# list_of_items = [ {"header": "대기중", "items": [...]}, {"header": "밭", "items": [...]}, ... ]
-original_items = []
-
-# 대기중 리스트 먼저 추가
-original_items.append({
-    "header": "대기중",
-    "items": st.session_state.assignments.get("대기중", [])
-})
-
-# 보유한 시설 리스트 추가
-for fac in st.session_state.owned_facilities:
-    original_items.append({
-        "header": fac,
-        "items": st.session_state.assignments.get(fac, [])
-    })
-
-# 2. sort_items 위젯 렌더링
-# key를 변경하면 강제로 위젯을 새로고침할 수 있음 (시설 추가/포켓몬 획득 시)
-sorted_items = sort_items(original_items, multi_containers=True, key=f"sortable_{st.session_state.sortable_key}")
-
-# 3. 드래그 앤 드롭 결과 동기화
-# 사용자가 드래그를 하면 sorted_items의 구조가 바뀜 -> 이를 session_state에 반영
-new_assignments = {}
-for container in sorted_items:
-    header = container['header']
-    items = container['items']
-    new_assignments[header] = items
-
-# 상태 업데이트
-st.session_state.assignments = new_assignments
-
-# --- 배치 결과 미리보기 (효율 표시) ---
-st.divider()
-st.subheader("📊 현재 배치 효율 현황")
-
-cols = st.columns(len(st.session_state.owned_facilities) + 1)
-
-# 대기중인 포켓몬 표시
-with cols[0]:
-    st.markdown("**💤 대기중**")
-    for p_name in st.session_state.assignments.get("대기중", []):
-        p = get_pokemon_by_name(p_name)
-        st.text(f"- {p_name}({p['type']})")
-
-# 각 시설별 효율 표시
-for idx, fac in enumerate(st.session_state.owned_facilities):
-    with cols[idx+1]:
-        info = FACILITIES_INFO[fac]
-        st.markdown(f"**🏭 {fac}**")
-        st.caption(f"금지:{info['banned']} / 2배:{info['boost']}")
-        st.caption(f"기반능력:{info['stat']}")
-        
-        current_workers = st.session_state.assignments.get(fac, [])
-        total_prod = 0
-        
-        for p_name in current_workers:
-            p = get_pokemon_by_name(p_name)
-            prod, status = calculate_efficiency(p, fac)
-            total_prod += prod
+with col1:
+    st.subheader("📋 일꾼 배치 관리")
+    
+    location_options = ["대기중"] + st.session_state.owned_facilities
+    
+    for p in st.session_state.owned_pokemon:
+        with st.container(border=True):
+            c1, c2 = st.columns([2, 3])
+            with c1:
+                st.markdown(f"**{p['data']['name']}**")
+                # 타입에 색상 적용 (시각적 효과)
+                st.caption(f"타입: {p['data']['type']}")
+            with c2:
+                try:
+                    current_idx = location_options.index(p['assigned_to'])
+                except ValueError:
+                    current_idx = 0
+                
+                new_loc = st.selectbox(
+                    "작업장 선택",
+                    location_options,
+                    index=current_idx,
+                    key=f"sel_{p['id']}",
+                    label_visibility="collapsed"
+                )
+                
+                if new_loc != p['assigned_to']:
+                    p['assigned_to'] = new_loc
+                    st.rerun()
             
-            # 텍스트 색상 및 포맷팅
-            if status == "불가(타입)":
-                st.markdown(f":red[- {p_name}: 0 ({status})]")
-            elif status == "최적(2배)":
-                st.markdown(f":green[- {p_name}: {prod} ({status})]")
-            else:
-                st.markdown(f"- {p_name}: {prod}")
+            if p['assigned_to'] != "대기중":
+                prod, status = calculate_efficiency(p['data'], p['assigned_to'])
+                out_type = FACILITIES_INFO[p['assigned_to']]['output']
+                color = "green" if status == "최적(2배)" else "red" if status == "불가(타입)" else "blue"
+                st.markdown(f":{color}[효율: {status} (+{prod} {out_type})]")
+
+with col2:
+    st.subheader("🏭 시설 현황")
+    
+    total_prod_money = 0
+    total_prod_tech = 0
+    
+    for fac in st.session_state.owned_facilities:
+        fac_info = FACILITIES_INFO[fac]
+        workers = [p for p in st.session_state.owned_pokemon if p['assigned_to'] == fac]
         
-        st.markdown(f"**합계: +{total_prod} {info['output']}**")
+        fac_prod = 0
+        worker_names = []
+        
+        for w in workers:
+            prod, _ = calculate_efficiency(w['data'], fac)
+            fac_prod += prod
+            worker_names.append(w['data']['name'])
+        
+        if fac_info['output'] == 'money':
+            total_prod_money += fac_prod
+        else:
+            total_prod_tech += fac_prod
+            
+        with st.expander(f"{fac} (현재 일꾼: {len(workers)}명)", expanded=True):
+            st.write(f"**생산량:** +{fac_prod} {fac_info['output']}")
+            st.caption(f"조건: {fac_info['boost']} 2배 / {fac_info['banned']} 금지")
+            if worker_names:
+                st.text(f"배치됨: {', '.join(worker_names)}")
+            else:
+                st.text("일꾼 없음")
+
+    st.success(f"예상 턴 수익: 💰 +{total_prod_money} / 💡 +{total_prod_tech}")
