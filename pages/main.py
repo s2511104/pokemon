@@ -16,7 +16,7 @@ TYPE_TRANSLATION = {
     "dragon": "드래곤", "dark": "악"
 }
 
-def load_pokemon_data(filename="pokemonnnn.csv"):
+def load_pokemon_data(filename="pokemon/pages/pokemonnnn.csv"):
     pokemon_db = []
     
     if not os.path.exists(filename):
