@@ -253,7 +253,7 @@ def gacha_pokemon(preferred_type):
 # 2. UI 구성
 # ==========================================
 
-st.title("🚜 포켓몬 농장 관리 시뮬레이션")
+st.title("🚜 포켓몬 가든")
 c1, c2, c3 = st.columns(3)
 c1.metric("📅 DAY", st.session_state.turn)
 c2.metric("💰 자금", f"{st.session_state.money}원")
